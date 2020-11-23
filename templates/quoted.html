@@ -1,0 +1,16 @@
+{% extends "login.html" %}
+
+{% block main %}
+
+
+    <h6>A share of {{ stock_name }} costs {{ price }}  </h6>
+
+
+    <form action="/quote" method="POST">
+        <div class="form-group">
+            <input autocomplete="off" autofocus class="form-control" name="symbol" placeholder="Stock Symbol" type="text">
+        </div>
+
+        <button class="btn btn-primary" type="submit">Request another quote</button>
+    </form>
+{% endblock %}

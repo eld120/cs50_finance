@@ -1,0 +1,41 @@
+{% extends "login.html" %}
+
+{% block main %}
+     
+     <h5>Funds available {{ cash_money}} </h5>
+     <hr>
+     
+     <form action="/buy" method="POST">
+        <div class="form-group">
+            <input autocomplete="off" autofocus class="form-control" name="symbol" placeholder="Stock Symbol" type="text">
+        </div>
+        <div class="form-group">
+            <input autocomplete="off" autofocus class="form-control" name="quantity" placeholder="Quantity" type="number">
+        </div>
+        
+        <button class="btn btn-primary" type="submit">Buy</button>
+    </form>
+    
+    <hr>
+    
+    <table class = "table table-light">
+    <tr>
+        <th>Stock Symbol</th>
+        <th>Quantity</th>
+        <th>Cost Basis</th>
+        <th>Market Value</th>
+    </tr>
+    {% for line in data%}
+    <tr >
+        <td>{{ user_session.symbol | default(" ", true)}}</td>
+        <td> {{ user_session.qty | default(" ", true) }} </td>
+         <td> {{ user_session.cost_basis | default(" ", true) }} </td>
+        <td> {{ float(user_session.cost_basis) * int(user_session.qty) | default(" ", true)}} </td>
+  </tr>
+
+    {% endfor %}
+    </table>
+    
+
+   
+{% endblock %}
