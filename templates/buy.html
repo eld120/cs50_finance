@@ -3,7 +3,7 @@
 {% block main %}
      
      <h5>Funds available {{ cash_money}} </h5>
-     <hr>
+     
      
      <form action="/buy" method="POST">
         <div class="form-group">
@@ -16,26 +16,29 @@
         <button class="btn btn-primary" type="submit">Buy</button>
     </form>
     
-    <hr>
+    
     
     <table class = "table table-light">
     <tr>
         <th>Stock Symbol</th>
         <th>Quantity</th>
-        <th>Cost Basis</th>
-        <th>Market Value</th>
+        <th>Cost</th>
+        <th>Value</th>
     </tr>
-    {% for line in data%}
+    {% for ele in use_sess%}
     <tr >
-        <td>{{ user_session.symbol | default(" ", true)}}</td>
-        <td> {{ user_session.qty | default(" ", true) }} </td>
-         <td> {{ user_session.cost_basis | default(" ", true) }} </td>
-        <td> {{ float(user_session.cost_basis) * int(user_session.qty) | default(" ", true)}} </td>
+        <td>{{ ele.symbol  }}</td>
+        <td> {{ ele.qty }} </td>
+         <td> {{ ele.value }} </td>
+        <td> ${{ ele.total_price }} </td>
   </tr>
 
     {% endfor %}
+  
+    
     </table>
     
-
+  
+  
    
 {% endblock %}
