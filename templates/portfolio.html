@@ -5,7 +5,24 @@
 {% endblock %}
 
 {% block main %}
-    
+     <h5>Funds available {{ cash_money}} </h5>
         
+      <table class = "table table-light">
+    <tr>
+        <th>Stock Symbol</th>
+        <th>Quantity</th>
+        <th>Cost</th>
+        <th>Value</th>
+    </tr>
+    {% for stock in external%}
+    <tr >
+        <td>{{ stock }}</td>
+        <td> {{ external[stock]["qty"] }}  </td>
+        <td> ${{ (external[stock]["cost"]/external[stock]["qty"])|float|round(2) }} </td>
+        <td> ${{ (external[stock]["today"]['price'] * external[stock]["qty"])|float|round(2) }} </td>
+  </tr>
+
+    {% endfor %}
+        </table>
 
 {% endblock %}

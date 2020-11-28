@@ -1,0 +1,46 @@
+{% extends "login.html" %}
+{% block title %}
+    Transactions
+{% endblock %}
+{% block main %}
+     
+     <h5>Funds available {{ cash_money}} </h5>
+     
+     
+     <form action="/sell" method="POST">
+        <div class="form-group">
+            <input autocomplete="off" autofocus class="form-control" required="required" name="symbol" placeholder="Stock Symbol" type="text">
+        </div>
+        <div class="form-group">
+            <input autocomplete="off" autofocus class="form-control" required="required" name="quantity" placeholder="Quantity" type="number">
+        </div>
+        
+        <button class="btn btn-primary" type="submit">Sell</button>
+    </form>
+    
+    
+    
+    <table class = "table table-light">
+    <tr>
+        <th>Stock Symbol</th>
+        <th>Quantity</th>
+        <th>Cost</th>
+        <th>Value</th>
+    </tr>
+    {% for stock in external%}
+    <tr >
+        <td>{{ stock }}</td>
+        <td> {{ external[stock]["qty"] }}  </td>
+         <td> ${{ (external[stock]["cost"]/external[stock]["qty"])|float|round(2) }} </td>
+        <td> ${{ external[stock]["cost"] }} </td>
+  </tr>
+
+    {% endfor %}
+  
+    
+    </table>
+    
+  
+  
+   
+{% endblock %}
