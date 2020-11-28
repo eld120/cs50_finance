@@ -1,5 +1,7 @@
+import helpers
+
 class Customer(object):
-    def __init__(self, user_id, cash):
+    def __init__(self, user_id, cash=10000):
         self.id = user_id
         self.symbols = []
         self.cash = cash
@@ -55,12 +57,18 @@ class Customer(object):
         return self.cash
 
 class Stock(object):
-    def __init__(self, stock_symbol, qty, cost_basis):
+    def __init__(self, stock_symbol, cost, qty, timestamp=None):
         self.symbol = stock_symbol
-        self.value = cost_basis
+        self.value = cost
         self.qty = qty
+        self.time = timestamp
+        
     
     
+
+    def set_cost(self, cost):
+        self.value = cost
+        return self.value
 
     def get_cost(self):
         '''int -> int
@@ -76,8 +84,41 @@ class Stock(object):
         '''
         return self.qty
 
+    def get_total_cost(self):
+        ''' None -> Float
+        returns the extended price of a stock
+        '''
+        
+        return self.total_price
+
 #probably not needed algorithm
-    '''user_data = {}
+
+'''
+rows = [{'id': 1, 'symbol':"SPY", 'qty': 3 ,'cost': 40.00, 'Timestamp': '2020-01-01 13:01:55' },
+            {'id': 3, 'symbol':"VONG", 'qty': 12 ,'cost': 250.00, 'Timestamp': '2020-02-04 13:01:55' }, 
+            {'id': 1, 'symbol':"SPY", 'qty': 1 ,'cost': 50.00, 'Timestamp': '2020-02-05 13:01:55' },
+            {'id': 2, 'symbol':"VOO", 'qty': 13 ,'cost': 200.00, 'Timestamp': '2020-03-05 13:01:55' }]
+user_data = {}
+
+
+for row in rows:
+    if key_checker(row,row["symbol"]) == True:
+        user_data[row['symbol']] = {
+            'qty': user_data[row['symbol']]['qty'] + row['qty'],
+            'cost': user_data[row['symbol']]['cost'] + row['cost']
+        }
+    else:
+        user_data[row['symbol']] = {
+            'qty': row['qty'],
+            'cost': row['cost']
+            }
+
+
+    
+
+    '''
+
+'''user_data = {}
     
     for row in rows:
         try:

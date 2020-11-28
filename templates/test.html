@@ -5,8 +5,10 @@
 {% endblock %}
 
 {% block main %}
-
-   Can we print this out? --> {{ test_var }} <--
+    {% for ele in use_sess%}
+   Can we print this out? --> {{ use_sess[ele]["symbol"] }} <--
         
-
+    {% endfor %}
 {% endblock %}
+
+

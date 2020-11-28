@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Porfolio History
+{% endblock %}
+
+{% block main %}
+             <h5>Funds available {{ cash_money}} </h5>
+
+      <table class = "table table-light">
+    <tr>
+        <th>Stock Symbol</th>
+        <th>Quantity</th>
+        <th>Cost</th>
+        <th>Value</th>
+        <th>Date</th>
+    </tr>
+    {% for item in history %}
+    <tr >
+        <td>{{ item.symbol }}</td>
+        <td> {{ item.qty }}  </td>
+        <td> ${{ item.value  }} </td>
+        <td> ${{ (item.value * item.qty) }} </td>
+        <td> {{ item.time}} </td>
+  </tr>
+
+    {% endfor %}
+        </table>
+
+{% endblock %}

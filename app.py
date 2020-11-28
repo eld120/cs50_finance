@@ -1,3 +1,4 @@
+from functools import total_ordering
 import os
 from objects import Customer, Stock
 from cs50 import SQL
@@ -8,6 +9,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException, InternalServe
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 from helpers import apology, login_required, usd, lookup
+from functions import key_checker
 
 # Configure application
 app = Flask(__name__)
@@ -40,57 +42,156 @@ db = SQL("sqlite:///finance.db")
 # Make sure API key is set
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
-###REMOVE COMMENTS ABOVE*******************************
+
+
+#processes user's data from DB into memory for all pages
+
 
 @app.route("/")
 @login_required
 def index():
     """Show portfolio of stocks"""
+    users = db.execute("SELECT * FROM users   WHERE id = :id", id=session["user_id"])
+    data = db.execute("SELECT * FROM data WHERE userid = :id", id=session["user_id"])
+    
+    user_session = Customer(users[0]["id"] , users[0]["cash"] )
+    today_stock = []
+    external = {}
+    
+    #only attempt to parse if data is present
+    if len(data) > 0:
+        for row in data:
+            user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
+            if key_checker(external, row["symbol"]) == True:
+                external[row['symbol']] = {
+                    'qty': external[row['symbol']]['qty'] + int(row['qty']),
+                    'cost': external[row['symbol']]["cost"] + row["cost"],
+                    }
+            else:
+                external[row['symbol']] = {
+                    'qty': row['qty'],
+                    'cost': row['cost'],
+                    }
+        for stock in list(external):
+            if external[stock]['qty'] == 0:
+                del external[stock]
+            else:
+                external[stock]['today'] = lookup(stock)
+            
+    #handle cash in the server instead of reading from database
+    cash_money = user_session.cash
+        
+    #iterate over stocks purchased in db, update cash on hand
+    for stock in external:
+        price_ea = float(external[stock]["cost"]) / int(external[stock]["qty"])
+        cash_money = cash_money - external[stock]["cost"]
+        
+    #updated cash on hand with dollar sign
+    cash_money = usd(cash_money)
+    
+            
 
+    return render_template("portfolio.html", external = external , cash_money = cash_money, today_stock = today_stock)
 
-    return render_template("portfolio.html")
-
-
+@app.route("/bought", methods=["GET", "POST"])
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
 def buy():
     """Buy shares of stock"""
-    #query database for available funds
-    data = db.execute("SELECT * FROM data INNER JOIN users ON users.id = data.userid WHERE id = :id", id=session["user_id"])
-        
-    use_sess = []
-    user_session = Customer(data[0]["id"] , data[0]["cash"] )
-    for row in data:
-        user_session.add_symbol(Stock(row["symbol"], row["qty"], row["price_ea"]))
-        use_sess.append(Stock(row["symbol"], row["qty"], row["price_ea"]))
-        #total_value = user_session.get_cost() * user_session.get_qty
+    users = db.execute("SELECT * FROM users   WHERE id = :id", id=session["user_id"])
+    data = db.execute("SELECT * FROM data WHERE userid = :id", id=session["user_id"])
     
-    cash_money = usd(user_session.cash)
+    user_session = Customer(users[0]["id"] , users[0]["cash"] )
+    today_stock = []
+    external = {}
+    
+    #only attempt to parse if data is present
+    if len(data) > 0:
+        for row in data:
+            user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
+                
+            #check and add symbols to a dictionary for end user facing webpage
+            if key_checker(external, row["symbol"]) == True:
+                external[row['symbol']] = {
+                    'qty': external[row['symbol']]['qty'] + int(row['qty']),
+                    'cost': external[row['symbol']]["cost"] + row["cost"],
+                    }
+            else:
+                external[row['symbol']] = {
+                    'qty': row['qty'],
+                    'cost': row['cost'],
+                }
+        #adds pricing to the dict - 
+        for stock in list(external):
+            if external[stock]['qty'] == 0:
+                del external[stock]
+            else:
+                external[stock]['today'] = lookup(stock)
+        #handle cash in the server instead of reading from database
+        cash_money = user_session.cash
+        
+        #iterate over stocks purchased in db, update cash on hand
+        for stock in external:
+            price_ea = float(external[stock]["cost"]) / int(external[stock]["qty"])
+            cash_money = cash_money - external[stock]["cost"]
+        
+        #updated cash on hand with dollar sign
+        cash_money = usd(cash_money)
+
+    
     if request.method == "POST":
         stock_symbol = lookup(request.form.get("symbol"))
-        stock_price = usd(stock_symbol["price"])
+        stock_price = stock_symbol["price"]
         stock_name = stock_symbol["name"]
         stock_qty = request.form.get("quantity")
 
+
         #checks for sufficient funds before database update
-        if (float(stock_price[1:]) * int(stock_qty)) > user_session.cash:
+        #price = stock_price
+        if (float(stock_price) * int(stock_qty)) > user_session.cash:
             return apology("FORBIDDEN! Insufficient Funds", 403)
         else:
-            new_balance = user_session.get_balance() - (float(stock_price[1:]) * int(stock_qty))
 
-        db.execute("INSERT INTO data (userid, symbol, qty, price_ea, timestamp ) VALUES(:userid, :symbol, :qty, :price_ea, :timestamp)", userid=session["user_id"], symbol = stock_symbol['symbol'], price_ea = stock_price, qty = stock_qty, timestamp = datetime.timestamp(datetime.utcnow())  )
+            new_balance = user_session.get_balance() - (float(stock_price) * int(stock_qty))
+
+        db.execute("INSERT INTO data (userid, symbol, qty, cost,  timestamp ) VALUES(:userid, :symbol, :qty, :cost, :timestamp  )", userid=session["user_id"], symbol = stock_symbol['symbol'], cost = stock_price, qty = stock_qty, timestamp = datetime.utcnow() )
    
-        db.execute("UPDATE users SET (cash, WHERE, id2, equal, id) VALUES (:cash, :WHERE, :id2, :equal, :id)", cash = new_balance ,WHERE = 'WHERE', id2 = 'id', equal = '=', id=session["user_id"])
+        #let's keep the database static and simply calculate balance in the server
+        
+        #db.execute("UPDATE users SET (cash, WHERE, userid, equal, id) VALUES (:cash, :WHERE, :userid, :equal, :id)", cash = new_balance ,WHERE = 'WHERE', userid = 'id', equal = '=', id=session["user_id"])
+        
 
-        return render_template("buy.html", use_sess = use_sess, user_session = user_session, cash_money = cash_money )
+
+        return render_template("bought.html", stock_symbol = stock_symbol, stock_price = stock_price, stock_qty = stock_qty )
     else:
-        return render_template("buy.html", use_sess = use_sess, user_session = user_session, cash_money = cash_money  )
+        #return render_template("test.html", use_sess = use_sess, user_session = user_session, cash_money = cash_money )
+        return render_template("buy.html", external = external , cash_money = cash_money )
 
 @app.route("/history")
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
+    users = db.execute("SELECT * FROM users   WHERE id = :id", id=session["user_id"])
+    data = db.execute("SELECT * FROM data WHERE userid = :id", id=session["user_id"])
+    
+
+    history = []
+    total_spent = 0
+    user_session = Customer(users[0]["id"] , users[0]["cash"] )
+
+    for line in data:
+        stock_symbol = line['symbol']
+        stock_qty = line['qty']
+        stock_cost = line['cost']
+        timestamp = line['timestamp']
+        history.append(Stock(stock_symbol, stock_cost, stock_qty, timestamp))
+        total_spent = total_spent + stock_cost
+
+    cash_money = usd(float(user_session.cash) - float(total_spent))
+    
+    
+
+    return render_template("history.html", history = history, cash_money = cash_money)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -146,7 +247,52 @@ def logout():
 @login_required
 def quote():
     """Get stock quote."""
+    users = db.execute("SELECT * FROM users   WHERE id = :id", id=session["user_id"])
+    data = db.execute("SELECT * FROM data WHERE userid = :id", id=session["user_id"])
     
+    user_session = Customer(users[0]["id"] , users[0]["cash"] )
+    today_stock = []
+    external = {}
+    
+    #only attempt to parse if data is present
+    if len(data) > 0:
+        for row in data:
+                user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
+                #today = lookup(row['symbol'])
+                #today_stock.append(today)
+                #check and add symbols to a dictionary for end user facing webpage
+                
+                if key_checker(external, row["symbol"]) == True:
+                    external[row['symbol']] = {
+                        'qty': external[row['symbol']]['qty'] + int(row['qty']),
+                        'cost': external[row['symbol']]["cost"] + row["cost"],
+                        
+                        }
+                else:
+                    external[row['symbol']] = {
+                        'qty': int(row['qty']),
+                        'cost': row['cost'],
+                        
+                        }
+        
+        #handle cash in the server instead of reading from database
+        cash_money = user_session.cash
+        
+        #iterate over stocks purchased in db, update cash on hand
+        for stock in external:
+            price_ea = float(external[stock]["cost"]) / int(external[stock]["qty"])
+            cash_money = cash_money - external[stock]["cost"]
+        
+        #updated cash on hand with dollar sign
+        cash_money = usd(cash_money)
+
+    for stock in list(external):
+        if external[stock]['qty'] == 0:
+            del external[stock]
+        else:
+            external[stock]['today'] = lookup(stock)
+
+
     if request.method == "POST":
         stock_symbol = lookup(request.form.get("symbol"))
         stock_price = usd(stock_symbol["price"])
@@ -206,7 +352,74 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    users = db.execute("SELECT * FROM users   WHERE id = :id", id=session["user_id"])
+    data = db.execute("SELECT * FROM data WHERE userid = :id", id=session["user_id"])
+    
+    user_session = Customer(users[0]["id"] , users[0]["cash"] )
+    #today_stock = []
+    external = {}
+    
+    #only attempt to parse if data is present
+    if len(data) > 0:
+        for row in data:
+            user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
+            #today = lookup(row['symbol'])
+            #today_stock.append(today)
+            #check and add symbols to a dictionary for end user facing webpage
+                
+            if key_checker(external, row["symbol"]) == True:
+                external[row['symbol']] = {
+                    'qty': external[row['symbol']]['qty'] + int(row['qty']),
+                    'cost': external[row['symbol']]["cost"] + row["cost"],
+                    
+                    }
+            else:
+                external[row['symbol']] = {
+                    'qty': int(row['qty']),
+                    'cost': row['cost'],
+                    
+                    }
+        
+    for stock in list(external):
+        if external[stock]['qty'] == 0:
+            del external[stock]
+        else:
+            external[stock]['today'] = lookup(stock)
+
+    #handle cash in the server instead of reading from database
+    cash_money = user_session.cash
+        
+    #iterate over stocks purchased in db, update cash on hand
+    for stock in external:
+        price_ea = float(external[stock]["cost"]) / int(external[stock]["qty"])
+        cash_money = cash_money - external[stock]["cost"]
+        
+    #updated cash on hand with dollar sign
+    cash_money = usd(cash_money)
+    
+    if request.method == "POST":
+        stock_symbol = request.form.get("symbol")
+        stock_qty = request.form.get("quantity")
+        if key_checker(external, (stock_symbol) ) == False:
+            return apology("you must hold this stock in your portfolio in order to sell", 403)
+        elif int(stock_qty) > int(external[stock_symbol]['qty']):
+            return apology("you can only sell as many holding as are in your portfolio", 403)
+
+
+        stock_symbol = lookup(request.form.get("symbol"))
+        stock_price = stock_symbol["price"]
+        stock_name = stock_symbol["name"]
+        
+
+        
+        db.execute("INSERT INTO data (userid, symbol, qty, cost, timestamp) VALUES (:userid, :symbol, :qty, :cost, :timestamp)", userid = session["user_id"], symbol = stock_symbol['symbol'], qty = (int(stock_qty) * -1), cost = (stock_price * -1), timestamp = datetime.utcnow() )
+
+        #remove stocks that are qty 0
+        
+
+
+        return render_template("sell.html",  external = external, cash_money = cash_money )
+    return render_template("sell.html",  external = external, cash_money = cash_money )
 
 
 def errorhandler(e):

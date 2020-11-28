@@ -1,4 +1,7 @@
 {% extends "login.html" %}
+{% block title %}
+    Transactions
+{% endblock %}
 
 {% block main %}
      
@@ -7,10 +10,10 @@
      
      <form action="/buy" method="POST">
         <div class="form-group">
-            <input autocomplete="off" autofocus class="form-control" name="symbol" placeholder="Stock Symbol" type="text">
+            <input autocomplete="off" autofocus class="form-control" required="required" name="symbol" placeholder="Stock Symbol" type="text">
         </div>
         <div class="form-group">
-            <input autocomplete="off" autofocus class="form-control" name="quantity" placeholder="Quantity" type="number">
+            <input autocomplete="off" autofocus class="form-control" required="required" name="quantity" placeholder="Quantity" type="number">
         </div>
         
         <button class="btn btn-primary" type="submit">Buy</button>
@@ -25,12 +28,12 @@
         <th>Cost</th>
         <th>Value</th>
     </tr>
-    {% for ele in use_sess%}
+    {% for stock in external%}
     <tr >
-        <td>{{ ele.symbol  }}</td>
-        <td> {{ ele.qty }} </td>
-         <td> {{ ele.value }} </td>
-        <td> ${{ ele.total_price }} </td>
+        <td>{{ stock }}</td>
+        <td> {{ external[stock]["qty"] }}  </td>
+         <td> ${{ (external[stock]["cost"]/external[stock]["qty"])|float|round(2) }} </td>
+        <td> ${{ external[stock]["cost"] }} </td>
   </tr>
 
     {% endfor %}
