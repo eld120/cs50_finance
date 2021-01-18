@@ -62,20 +62,27 @@ def index():
     if len(data) > 0:
         for row in data:
             user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
+            #populates dictionary with stock symbol/qty/cost
             if key_checker(external, row["symbol"]) == True:
                 external[row['symbol']] = {
                     'qty': external[row['symbol']]['qty'] + int(row['qty']),
-                    'cost': external[row['symbol']]["cost"] + row["cost"],
+                    'cost': external[row['symbol']]["cost"] + (row["cost"] * abs(int(row['qty']))),
+                    
                     }
             else:
                 external[row['symbol']] = {
                     'qty': row['qty'],
                     'cost': row['cost'],
+                    
                     }
+        #deletes stock from dictionary if stock qty goes to zero            
         for stock in list(external):
             if external[stock]['qty'] == 0:
+                user_session.cash -= external[stock]['cost']
                 del external[stock]
+            #updates stock price to reflect today's value
             else:
+                user_session.cash -= external[stock]['cost']
                 external[stock]['today'] = lookup(stock)
             
     #handle cash in the server instead of reading from database
@@ -109,23 +116,27 @@ def buy():
     if len(data) > 0:
         for row in data:
             user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
-                
-            #check and add symbols to a dictionary for end user facing webpage
+            #populates dictionary with stock symbol/qty/cost
             if key_checker(external, row["symbol"]) == True:
                 external[row['symbol']] = {
                     'qty': external[row['symbol']]['qty'] + int(row['qty']),
-                    'cost': external[row['symbol']]["cost"] + row["cost"],
+                    'cost': external[row['symbol']]["cost"] + (row["cost"] * abs(int(row['qty']))),
+                    
                     }
             else:
                 external[row['symbol']] = {
                     'qty': row['qty'],
                     'cost': row['cost'],
-                }
-        #adds pricing to the dict - 
+                    
+                    }
+        #deletes stock from dictionary if stock qty goes to zero            
         for stock in list(external):
             if external[stock]['qty'] == 0:
+                user_session.cash -= external[stock]['cost']
                 del external[stock]
+            #updates stock price to reflect today's value
             else:
+                user_session.cash -= external[stock]['cost']
                 external[stock]['today'] = lookup(stock)
         #handle cash in the server instead of reading from database
         cash_money = user_session.cash
@@ -257,27 +268,31 @@ def quote():
     #only attempt to parse if data is present
     if len(data) > 0:
         for row in data:
-                user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
-                #today = lookup(row['symbol'])
-                #today_stock.append(today)
-                #check and add symbols to a dictionary for end user facing webpage
-                
-                if key_checker(external, row["symbol"]) == True:
-                    external[row['symbol']] = {
-                        'qty': external[row['symbol']]['qty'] + int(row['qty']),
-                        'cost': external[row['symbol']]["cost"] + row["cost"],
-                        
-                        }
-                else:
-                    external[row['symbol']] = {
-                        'qty': int(row['qty']),
-                        'cost': row['cost'],
-                        
-                        }
+            user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
+            #populates dictionary with stock symbol/qty/cost
+            if key_checker(external, row["symbol"]) == True:
+                external[row['symbol']] = {
+                    'qty': external[row['symbol']]['qty'] + int(row['qty']),
+                    'cost': external[row['symbol']]["cost"] + (row["cost"] * abs(int(row['qty']))),
+                    
+                    }
+            else:
+                external[row['symbol']] = {
+                    'qty': row['qty'],
+                    'cost': row['cost'],
+                    
+                    }
+        #deletes stock from dictionary if stock qty goes to zero            
+        for stock in list(external):
+            if external[stock]['qty'] == 0:
+                user_session.cash -= external[stock]['cost']
+                del external[stock]
+            #updates stock price to reflect today's value
+            else:
+                user_session.cash -= external[stock]['cost']
+                external[stock]['today'] = lookup(stock)
         
-        #handle cash in the server instead of reading from database
         cash_money = user_session.cash
-        
         #iterate over stocks purchased in db, update cash on hand
         for stock in external:
             price_ea = float(external[stock]["cost"]) / int(external[stock]["qty"])
@@ -363,28 +378,28 @@ def sell():
     if len(data) > 0:
         for row in data:
             user_session.add_symbol(Stock(row["symbol"], row["cost"], row["qty"]  ))
-            #today = lookup(row['symbol'])
-            #today_stock.append(today)
-            #check and add symbols to a dictionary for end user facing webpage
-                
+            #populates dictionary with stock symbol/qty/cost
             if key_checker(external, row["symbol"]) == True:
                 external[row['symbol']] = {
                     'qty': external[row['symbol']]['qty'] + int(row['qty']),
-                    'cost': external[row['symbol']]["cost"] + row["cost"],
+                    'cost': external[row['symbol']]["cost"] + (row["cost"] * abs(int(row['qty']))),
                     
                     }
             else:
                 external[row['symbol']] = {
-                    'qty': int(row['qty']),
+                    'qty': row['qty'],
                     'cost': row['cost'],
                     
                     }
-        
-    for stock in list(external):
-        if external[stock]['qty'] == 0:
-            del external[stock]
-        else:
-            external[stock]['today'] = lookup(stock)
+        #deletes stock from dictionary if stock qty goes to zero            
+        for stock in list(external):
+            if external[stock]['qty'] == 0:
+                user_session.cash -= external[stock]['cost']
+                del external[stock]
+            #updates stock price to reflect today's value
+            else:
+                user_session.cash -= external[stock]['cost']
+                external[stock]['today'] = lookup(stock)
 
     #handle cash in the server instead of reading from database
     cash_money = user_session.cash
