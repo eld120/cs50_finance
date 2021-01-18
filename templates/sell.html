@@ -32,7 +32,7 @@
         <td>{{ stock }}</td>
         <td> {{ external[stock]["qty"] }}  </td>
          <td> ${{ (external[stock]["cost"]/external[stock]["qty"])|float|round(2) }} </td>
-        <td> ${{ external[stock]["cost"] }} </td>
+        <td> ${{ external[stock]["cost"] |float|round(2) }} </td>
   </tr>
 
     {% endfor %}
